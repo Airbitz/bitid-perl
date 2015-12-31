@@ -8,6 +8,7 @@ use URI::Encode;
 use Data::Dumper;
 use MIME::Base64;
 use Crypt::PK::ECC;
+use Crypt::OpenSSL::ECDSA;
 use Digest::SHA qw( sha256 );
 use Math::BigInt lib => 'GMP';
 use Math::Random::Secure qw( irand );
@@ -67,13 +68,34 @@ use constant SCHEME => 'bitid';
         my %args = @_;
 
         my $isYEven = 0;
-        $isYEven = 1 if ($args{recoveryFlags & 1) != 0);
+        $isYEven = 1 if ($args{recoveryFlags} & 1) != 0);
         
         my $isSecondKey = 0;
-        $isSecondKey = 1 if ($args{recoveryFlags & 2) != 0);
+        $isSecondKey = 1 if ($args{recoveryFlags} & 2) != 0);
 
         my $curve = $self->{_secp256k1};
-        #my $signature = new Signature($args{r}, $args{s});
+        my $signature = Crypt::OpenSSL::ECDSA::ECDSA_SIG->new();
+        $signature->set_r($args{r});
+        $signature->set_s($args{s});
+
+        #php: my $p_over_four = gmp_div(gmp_add($curve->getPrime(), 1), 4);
+        my $pofi = Math::BigInt->new( '1' ); #p_over_four inner
+        my $curveHash = $curv->curve2hash();
+        $pofi->badd( $curveHash->prime() );
+
+        my $pofo = Math::BigInt->new( '4' ); #p_over_four_outer
+        $pofo->bdiv( $pofi );
+
+        my $x;
+        if (!$isSecondKey) {
+            $x = $args{r};
+        } else {
+            $x = Math::BigInt->new( $args{r} );
+            $x->badd( 
+            $x = gmp_add($args{r}, $G->getOrder());
+        }
+
+   
 
     }
 
